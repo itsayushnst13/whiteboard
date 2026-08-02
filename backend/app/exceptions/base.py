@@ -31,3 +31,8 @@ class ConflictError(AppException):
 class UnauthorizedError(AppException):
     def __init__(self, message: str = "Invalid credentials") -> None:
         super().__init__(message, code="UNAUTHORIZED", status_code=401)
+
+
+class ForbiddenError(AppException):
+    def __init__(self, message: str = "You don't have permission to do this") -> None:
+        super().__init__(message, code="FORBIDDEN", status_code=403)

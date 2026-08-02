@@ -66,6 +66,10 @@ async def test_get_missing_board_returns_404(db_client: AsyncClient) -> None:
 
 
 async def test_cannot_access_another_users_board(db_client: AsyncClient) -> None:
+    """A board that exists but the caller has no access to (not owner,
+    not a collaborator) returns 403, not 404 — 404 is reserved for a
+    board id that doesn't exist at all. This lets the frontend show "you
+    don't have access" instead of pretending the board never existed."""
     owner_token = await _register_and_get_token(db_client, "owner2@example.com")
     other_token = await _register_and_get_token(db_client, "other@example.com")
 
@@ -79,7 +83,7 @@ async def test_cannot_access_another_users_board(db_client: AsyncClient) -> None
         f"/boards/{created['id']}", headers={"Authorization": f"Bearer {other_token}"}
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 403
 
 
 async def test_delete_board_removes_it(db_client: AsyncClient) -> None:
@@ -138,4 +142,4 @@ async def test_cannot_rename_another_users_board(db_client: AsyncClient) -> None
         headers={"Authorization": f"Bearer {other_token}"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 403

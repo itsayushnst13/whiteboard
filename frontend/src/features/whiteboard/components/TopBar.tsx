@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Check, Download, Link as LinkIcon, PenLine } from 'lucide-react'
+import { ArrowLeft, Download, PenLine, Share2 } from 'lucide-react'
 import { useMyPresence, useOthers, useSelf, useStatus } from '../lib/liveblocks'
 import { setStoredName } from '../lib/identity'
 import type { BoardHandle } from './Board'
+import { ShareDialog } from './ShareDialog'
+import type { BoardRole } from '../../boards/lib/types'
 
 function initials(name: string) {
   return name
@@ -17,16 +19,17 @@ function initials(name: string) {
 interface TopBarProps {
   boardId: number
   boardName: string
+  role: BoardRole
   onRenameBoard: (name: string) => Promise<void>
   exportRef: React.MutableRefObject<BoardHandle | null>
 }
 
-export function TopBar({ boardId, boardName, onRenameBoard, exportRef }: TopBarProps) {
+export function TopBar({ boardId, boardName, role, onRenameBoard, exportRef }: TopBarProps) {
   const others = useOthers()
   const self = useSelf()
   const [presence, updatePresence] = useMyPresence()
   const status = useStatus()
-  const [copied, setCopied] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [displayName, setDisplayName] = useState(boardName)
   const [renameError, setRenameError] = useState<string | null>(null)
@@ -82,7 +85,7 @@ export function TopBar({ boardId, boardName, onRenameBoard, exportRef }: TopBarP
             }}
             className="w-48 rounded border border-blue-300 px-2 py-0.5 text-sm font-medium outline-none"
           />
-        ) : (
+        ) : role === 'owner' ? (
           <button
             onClick={() => setEditingName(true)}
             title="Rename this board"
@@ -90,6 +93,13 @@ export function TopBar({ boardId, boardName, onRenameBoard, exportRef }: TopBarP
           >
             {displayName}
           </button>
+        ) : (
+          <span className="font-medium text-neutral-800">{displayName}</span>
+        )}
+        {role !== 'owner' && (
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium capitalize text-neutral-500">
+            {role}
+          </span>
         )}
         {renameError && <span className="text-xs text-red-600">{renameError}</span>}
         <span
@@ -129,15 +139,11 @@ export function TopBar({ boardId, boardName, onRenameBoard, exportRef }: TopBarP
         </div>
 
         <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 1500)
-          }}
+          onClick={() => setShareOpen(true)}
           className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50"
         >
-          {copied ? <Check size={14} /> : <LinkIcon size={14} />}
-          {copied ? 'Copied' : 'Share'}
+          <Share2 size={14} />
+          Share
         </button>
 
         <button
@@ -155,6 +161,9 @@ export function TopBar({ boardId, boardName, onRenameBoard, exportRef }: TopBarP
         <code>VITE_LIVEBLOCKS_PUBLIC_KEY</code> is set to a valid key in{' '}
         <code>frontend/.env</code>, then reload.
       </div>
+    )}
+    {shareOpen && (
+      <ShareDialog boardId={boardId} role={role} onClose={() => setShareOpen(false)} />
     )}
     </div>
   )

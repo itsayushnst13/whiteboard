@@ -19,12 +19,30 @@ the dashboard — each board gets its own room that others can join live.
 
 ## Routes
 
-| Route             | Page                                                        |
-| ------------------ | ------------------------------------------------------------ |
-| `/login`          | Log in                                                       |
-| `/register`       | Create an account                                             |
-| `/boards`         | Dashboard — list, create, and delete your saved boards        |
-| `/board/:roomId`  | The whiteboard itself (protected — redirects to `/login`)     |
+| Route               | Page                                                                    |
+| -------------------- | ------------------------------------------------------------------------ |
+| `/login`            | Log in                                                                   |
+| `/register`         | Create an account                                                        |
+| `/boards`           | Dashboard — "Owned boards" and "Shared with me", create/rename/delete    |
+| `/board/:boardId`   | The whiteboard itself (protected — redirects to `/login`)                |
+
+`/board/:boardId` is the permanent, shareable URL for a board (numeric
+board id, not the Liveblocks room token). On load it calls
+`GET /boards/:boardId` and branches on the result: 200 opens the board with
+the caller's `role` (owner/editor/viewer), 403 shows "You don't have access
+to this board" (no silent redirect), 404 shows "This board doesn't exist".
+See `App.tsx`'s `BoardRoute`.
+
+## Sharing & roles
+
+The top bar's **Share** button opens a dialog to copy the board's link,
+invite a collaborator by email (owner only — picks a role of Editor or
+Viewer), and manage/remove existing collaborators. A `viewer` sees a
+"View only" badge and gets a read-only canvas (`Board.tsx`'s `readOnly`
+prop disables the toolbar and all draw/erase/move/undo/redo handlers).
+See `backend/README.md` for the full permission matrix and API, and for an
+important caveat: this gates the REST API, not the Liveblocks room itself
+(see below).
 
 Auth state lives in `features/auth/lib/AuthContext.tsx`: a JWT from the
 backend is stored in `localStorage` and attached to API requests by
@@ -57,13 +75,22 @@ later, add a small Node microservice (or Next.js API route) that calls
 client to `createClient({ authEndpoint: ... })` in
 `src/features/whiteboard/lib/liveblocks.ts`.
 
+Practical effect on the sharing feature above: anyone who knows a board's
+`room_id` (not exposed in the URL, but visible to anyone the backend has
+already granted access to) can technically join that Liveblocks room from
+a raw client, since public-key mode doesn't check per-room permissions
+server-side. The REST API's owner/editor/viewer checks are real; the
+"viewer can't edit" restriction on the canvas itself is enforced in the
+frontend UI, not cryptographically. This is the same tradeoff called out
+above, just applied to roles instead of room access generally.
+
 ## Layout
 
 | Directory                        | Responsibility                                   |
 | --------------------------------- | ------------------------------------------------- |
 | `features/auth`                  | Login/register pages, AuthContext, ProtectedRoute |
-| `features/boards`                | Boards dashboard (list/create/delete)             |
-| `features/whiteboard/components` | Canvas, toolbar, top bar, cursors, text editing   |
+| `features/boards`                | Boards dashboard, collaborator API helpers        |
+| `features/whiteboard/components` | Canvas, toolbar, top bar, share dialog, cursors    |
 | `features/whiteboard/lib`        | Liveblocks client/room config, identity, geometry |
 | `features/whiteboard/types`      | Shape/tool type definitions                       |
 | `lib/api.ts`                     | Fetch wrapper: base URL, JWT header, error envelope |

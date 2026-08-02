@@ -33,7 +33,12 @@ export interface BoardHandle {
   exportPng: () => void
 }
 
-export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHandle | null> }) {
+interface BoardProps {
+  exportRef: React.MutableRefObject<BoardHandle | null>
+  readOnly?: boolean
+}
+
+export function Board({ exportRef, readOnly = false }: BoardProps) {
   const stageRef = useRef<Konva.Stage>(null)
   const shapes = useStorage((root) => root.shapes)
   const [presence, updatePresence] = useMyPresence()
@@ -57,6 +62,7 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
   const isErasing = useRef(false)
   const drawStart = useRef({ x: 0, y: 0 })
   const storageReady = shapes !== null
+  const canEdit = storageReady && !readOnly
 
   const addShape = useMutation(({ storage, self: mSelf }, shape: Shape) => {
     storage.get('shapes').set(shape.id, { ...shape, authorId: mSelf.connectionId.toString() })
@@ -115,7 +121,7 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
         return
       }
 
-      if (!storageReady) return
+      if (!canEdit) return
 
       if (tool === 'eraser') {
         isErasing.current = true
@@ -212,7 +218,7 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
         } as Shape)
       }
     },
-    [tool, addShape, eraseAt, storageReady],
+    [tool, addShape, eraseAt, canEdit],
   )
 
   const handleMouseMove = useCallback(
@@ -252,10 +258,10 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
     isErasing.current = false
     const finished = draftRef.current
     setDraft(null)
-    if (finished && storageReady && !isDraftNegligible(finished)) {
+    if (finished && canEdit && !isDraftNegligible(finished)) {
       addShape(finished)
     }
-  }, [addShape, storageReady])
+  }, [addShape, canEdit])
 
   const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault()
@@ -285,7 +291,7 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
     function onKeyDown(ev: KeyboardEvent) {
       const target = ev.target as HTMLElement
       if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') return
-      if (!storageReady) return
+      if (!canEdit) return
       if ((ev.key === 'Delete' || ev.key === 'Backspace') && selectedShapeId) {
         deleteShape(selectedShapeId)
         setSelectedShapeId(null)
@@ -301,7 +307,7 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedShapeId, deleteShape, history, storageReady])
+  }, [selectedShapeId, deleteShape, history, canEdit])
 
   exportRef.current = {
     exportPng: () => {
@@ -323,8 +329,14 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
         tool={tool}
         onToolChange={setTool}
         onClearBoard={clearBoard}
-        disabled={!storageReady}
+        disabled={!canEdit}
+        disabledReason={readOnly ? 'You have view-only access to this board.' : undefined}
       />
+      {readOnly && (
+        <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-neutral-800/90 px-3 py-1 text-xs font-medium text-white">
+          View only
+        </div>
+      )}
       <Stage
         ref={stageRef}
         width={window.innerWidth}
@@ -358,11 +370,16 @@ export function Board({ exportRef }: { exportRef: React.MutableRefObject<BoardHa
               key={shape.id}
               shape={shape}
               isSelected={selectedShapeId === shape.id}
-              draggable={tool === 'select'}
-              onSelect={() => tool === 'eraser' ? deleteShape(shape.id) : setSelectedShapeId(shape.id)}
-              onDragEnd={(x, y) => updateShapePosition(shape.id, x, y)}
+              draggable={tool === 'select' && canEdit}
+              onSelect={() => {
+                if (tool === 'eraser' && canEdit) deleteShape(shape.id)
+                else setSelectedShapeId(shape.id)
+              }}
+              onDragEnd={(x, y) => canEdit && updateShapePosition(shape.id, x, y)}
               onDblClick={() =>
-                (shape.type === 'text' || shape.type === 'sticky') && setEditingShapeId(shape.id)
+                canEdit &&
+                (shape.type === 'text' || shape.type === 'sticky') &&
+                setEditingShapeId(shape.id)
               }
             />
           ))}

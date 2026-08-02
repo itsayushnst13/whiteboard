@@ -6,6 +6,7 @@ import { getInitialName, getStoredColor } from '../lib/identity'
 import { ErrorBoundary } from './ErrorBoundary'
 import { Board, type BoardHandle } from './Board'
 import { TopBar } from './TopBar'
+import type { BoardRole } from '../../boards/lib/types'
 
 function BoardLoading() {
   return (
@@ -19,12 +20,21 @@ interface BoardPageProps {
   roomId: string
   boardId: number
   boardName: string
+  role: BoardRole
   accountName?: string | null
   onRenameBoard: (name: string) => Promise<void>
 }
 
-export function BoardPage({ roomId, boardId, boardName, accountName, onRenameBoard }: BoardPageProps) {
+export function BoardPage({
+  roomId,
+  boardId,
+  boardName,
+  role,
+  accountName,
+  onRenameBoard,
+}: BoardPageProps) {
   const exportRef = useRef<BoardHandle | null>(null)
+  const readOnly = role === 'viewer'
 
   return (
     <ErrorBoundary>
@@ -46,10 +56,11 @@ export function BoardPage({ roomId, boardId, boardName, accountName, onRenameBoa
             <TopBar
               boardId={boardId}
               boardName={boardName}
+              role={role}
               onRenameBoard={onRenameBoard}
               exportRef={exportRef}
             />
-            <Board exportRef={exportRef} />
+            <Board exportRef={exportRef} readOnly={readOnly} />
           </div>
         </ClientSideSuspense>
       </RoomProvider>

@@ -23,6 +23,7 @@ interface ToolbarProps {
   onToolChange: (tool: Tool) => void
   onClearBoard: () => void
   disabled?: boolean
+  disabledReason?: string
 }
 
 const TOOLS: { tool: Tool; icon: typeof MousePointer2; label: string }[] = [
@@ -39,14 +40,20 @@ const TOOLS: { tool: Tool; icon: typeof MousePointer2; label: string }[] = [
   { tool: 'sticky', icon: StickyNote, label: 'Sticky note (N)' },
 ]
 
-export function Toolbar({ tool, onToolChange, onClearBoard, disabled = false }: ToolbarProps) {
+export function Toolbar({
+  tool,
+  onToolChange,
+  onClearBoard,
+  disabled = false,
+  disabledReason,
+}: ToolbarProps) {
   const history = useHistory()
   const canUndo = useCanUndo()
   const canRedo = useCanRedo()
 
   return (
     <div
-      title={disabled ? 'Connecting to the board…' : undefined}
+      title={disabled ? (disabledReason ?? 'Connecting to the board…') : undefined}
       className={clsx(
         'absolute left-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg transition-opacity',
         disabled && 'pointer-events-none opacity-40',

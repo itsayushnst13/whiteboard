@@ -36,7 +36,9 @@ and share its URL with others to collaborate on it live.
 ## Features
 
 - Email/password accounts — boards are saved per user and listed on a
-  dashboard after login
+  dashboard after login, split into "Owned boards" and "Shared with me"
+- Board sharing with owner/editor/viewer roles — invite a collaborator by
+  email from the Share dialog, copy a permanent board link, remove access
 - Freehand draw and erase
 - Rectangle, ellipse, star, line, and arrow shapes
 - Text and sticky notes

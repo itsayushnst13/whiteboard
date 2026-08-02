@@ -1,6 +1,7 @@
 from app.exceptions.base import (
     AppException,
     ConflictError,
+    ForbiddenError,
     NotFoundError,
     ServiceUnavailableError,
     UnauthorizedError,
@@ -13,5 +14,6 @@ __all__ = [
     "ServiceUnavailableError",
     "ConflictError",
     "UnauthorizedError",
+    "ForbiddenError",
     "register_exception_handlers",
 ]

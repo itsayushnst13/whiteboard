@@ -22,9 +22,46 @@ hashing, `PyJWT` for signing — see `app/core/security.py`). Set a real
 
 - `POST /auth/register`, `POST /auth/login` — return `{ access_token, user }`
 - `GET /auth/me` — current user, requires `Authorization: Bearer <token>`
-- `GET /boards`, `POST /boards`, `GET /boards/{id}`, `DELETE /boards/{id}` —
-  boards are scoped to their owner; each board carries a `room_id` that the
-  frontend hands to Liveblocks to join the real-time room
+- `GET /boards`, `POST /boards`, `GET /boards/{id}`, `PATCH /boards/{id}`,
+  `DELETE /boards/{id}` — each board carries a `room_id` that the frontend
+  hands to Liveblocks to join the real-time room, and a `role` (see below)
+  telling the caller what they're allowed to do with it
+
+## Sharing & permissions
+
+Every board has exactly one **owner** (`Board.owner_id`) plus any number of
+**collaborators** (`board_collaborators` table), each with a role:
+
+| Role      | Rename / delete board | Invite / remove collaborators | Draw / edit / erase / undo / redo / export | View |
+| --------- | :--------------------: | :----------------------------: | :-----------------------------------------: | :--: |
+| `owner`   | ✅ | ✅ | ✅ | ✅ |
+| `editor`  | ❌ | ❌ | ✅ | ✅ |
+| `viewer`  | ❌ | ❌ | ❌ | ✅ |
+
+- `POST /boards/{id}/share`, `POST /boards/{id}/collaborators` — invite (or
+  re-invite to change the role of) a collaborator by email. Owner only.
+  404 if no account exists with that email, 409 if it's the owner's own
+  email, otherwise upserts the `board_collaborators` row.
+- `GET /boards/{id}/collaborators` — list collaborators. Owner or any
+  collaborator can view it.
+- `DELETE /boards/{id}/collaborators/{userId}` — remove a collaborator.
+  Owner only.
+- `GET /boards/{id}` — **404** if the board id doesn't exist at all,
+  **403** if it exists but the caller is neither owner nor collaborator,
+  **200** with the caller's `role` otherwise. The 403/404 split is
+  intentional (see `app/services/board_service.py::_get_board_and_role`)
+  so the frontend can show "you don't have access" instead of silently
+  pretending the board never existed.
+
+**Known limitation:** these checks gate the REST API (who can see/rename/
+delete/invite on a board) but do **not** gate the Liveblocks room itself —
+see `frontend/README.md` for why the client uses Liveblocks' public-key
+mode rather than a permissioned/authenticated room. In practice this means
+a `viewer`'s browser is trusted (via the frontend UI) not to send draw
+mutations, rather than being cryptographically prevented from doing so.
+Closing that gap fully would require switching to Liveblocks' secret-key
+auth flow, which was deliberately deferred — see that README for the
+tradeoff.
 
 ## Layout
 
