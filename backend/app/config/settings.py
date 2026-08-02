@@ -72,4 +72,4 @@ def get_settings() -> Settings:
     """Cached settings accessor. FastAPI dependencies should call this
     rather than constructing Settings() directly, so the whole app shares
     one validated instance."""
-    return Settings()  # type: ignore[call-arg]
+    return Settings()

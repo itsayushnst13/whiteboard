@@ -53,7 +53,12 @@ select = [
     "SIM",           # simplify
     "N",             # pep8-naming
 ]
-ignore = ["B008"] # FastAPI's Depends(...) in defaults is idiomatic
+ignore = [
+    "B008", # FastAPI's Depends(...) in defaults is idiomatic
+    "N818", # AppException predates this rule; renaming ripples through every
+            # route/service that imports it for one stylistic suffix — not
+            # worth the diff.
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

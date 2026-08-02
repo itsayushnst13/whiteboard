@@ -32,7 +32,14 @@ def _build_app() -> FastAPI:
 
 @pytest.fixture
 async def exc_client() -> AsyncIterator[AsyncClient]:
-    transport = ASGITransport(app=_build_app())
+    # raise_app_exceptions=False: Starlette's ServerErrorMiddleware builds
+    # the 500 response and then *re-raises* the original exception so the
+    # serving process can log it. ASGITransport propagates that re-raise by
+    # default, which would surface here as a bare RuntimeError instead of
+    # the response we want to assert on. A real uvicorn deployment returns
+    # the envelope to the client either way — this only affects in-process
+    # ASGI testing.
+    transport = ASGITransport(app=_build_app(), raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 

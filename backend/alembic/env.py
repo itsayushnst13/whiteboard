@@ -7,6 +7,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import get_settings
+from app.db.url import prepare_database_url
 from app.models import Base
 
 config = context.config
@@ -18,7 +19,13 @@ if config.config_file_name is not None:
 # app.models so it registers on this metadata before autogenerate runs.
 target_metadata = Base.metadata
 
-config.set_main_option("sqlalchemy.url", get_settings().DATABASE_URL)
+# Same normalization the app's engine uses (app/db/url.py): rewrites
+# `postgres(ql)://` to `postgresql+asyncpg://` and strips libpq-only
+# query params (sslmode, channel_binding) that asyncpg's connect() would
+# otherwise choke on — see that module's docstring for why this matters
+# for Neon and similar managed Postgres providers.
+_DATABASE_URL, _CONNECT_ARGS = prepare_database_url(get_settings().DATABASE_URL)
+config.set_main_option("sqlalchemy.url", _DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
@@ -47,6 +54,7 @@ async def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=_CONNECT_ARGS,
     )
 
     async with connectable.connect() as connection:

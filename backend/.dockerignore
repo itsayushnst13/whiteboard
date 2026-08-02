@@ -8,3 +8,8 @@ __pycache__/
 htmlcov/
 .env
 *.md
+# pyproject.toml declares `readme = "README.md"`, and hatchling validates
+# that file exists while generating metadata — without this exception
+# `pip install .` fails the image build with
+# "OSError: Readme file does not exist: README.md".
+!README.md

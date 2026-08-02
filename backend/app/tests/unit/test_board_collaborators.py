@@ -1,21 +1,27 @@
+from typing import Any
+
 from httpx import AsyncClient
 
 
-async def _register(client: AsyncClient, email: str, display_name: str = "User") -> dict:
+async def _register(client: AsyncClient, email: str, display_name: str = "User") -> dict[str, Any]:
     response = await client.post(
         "/auth/register",
         json={"email": email, "password": "supersecret", "display_name": display_name},
     )
-    return response.json()["data"]
+    data: dict[str, Any] = response.json()["data"]
+    return data
 
 
-def _auth(token: str) -> dict:
+def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-async def _create_board(client: AsyncClient, token: str, name: str = "Shared board") -> dict:
+async def _create_board(
+    client: AsyncClient, token: str, name: str = "Shared board"
+) -> dict[str, Any]:
     response = await client.post("/boards", json={"name": name}, headers=_auth(token))
-    return response.json()["data"]
+    data: dict[str, Any] = response.json()["data"]
+    return data
 
 
 async def test_owner_can_invite_collaborator_by_email(db_client: AsyncClient) -> None:

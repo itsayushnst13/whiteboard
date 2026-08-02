@@ -15,7 +15,12 @@ def get_redis_client() -> Redis:
     connection pool without connecting immediately, mirroring the async
     Postgres engine's lazy-connect behavior."""
     settings = get_settings()
-    return redis_from_url(settings.REDIS_URL, decode_responses=True)
+    # redis-py's `from_url` isn't typed precisely enough for mypy --strict
+    # to infer past `Any` here.
+    client: Redis = redis_from_url(  # type: ignore[no-untyped-call]
+        settings.REDIS_URL, decode_responses=True
+    )
+    return client
 
 
 async def ping_redis() -> bool:

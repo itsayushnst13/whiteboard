@@ -9,7 +9,9 @@ class JsonFormatter(logging.Formatter):
     directly queryable in any log aggregator (CloudWatch, Datadog, Loki)
     without a separate parsing stage."""
 
-    _RESERVED: ClassVar[frozenset[str]] = frozenset(logging.LogRecord("", 0, "", 0, "", (), None).__dict__)
+    _RESERVED: ClassVar[frozenset[str]] = frozenset(
+        logging.LogRecord("", 0, "", 0, "", (), None).__dict__
+    )
 
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
@@ -22,9 +24,7 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
 
-        extras = {
-            key: value for key, value in record.__dict__.items() if key not in self._RESERVED
-        }
+        extras = {key: value for key, value in record.__dict__.items() if key not in self._RESERVED}
         payload.update(extras)
 
         return json.dumps(payload, default=str)

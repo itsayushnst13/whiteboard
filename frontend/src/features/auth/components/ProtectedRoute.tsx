@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -14,7 +15,10 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    // Carry the page they were trying to reach through the login flow, so
+    // someone opening a shared /board/:id link while logged out lands on
+    // that board after signing in rather than on the generic dashboard.
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
 
   return <>{children}</>

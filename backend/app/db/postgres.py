@@ -3,9 +3,15 @@ from collections.abc import AsyncIterator
 from functools import lru_cache
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.config import get_settings
+from app.db.url import prepare_database_url
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +22,14 @@ def get_engine() -> AsyncEngine:
     not open a connection — the pool connects on first use — so the app
     can start even if Postgres isn't reachable yet."""
     settings = get_settings()
+    url, connect_args = prepare_database_url(settings.DATABASE_URL)
     return create_async_engine(
-        settings.DATABASE_URL,
+        url,
         pool_size=settings.DATABASE_POOL_SIZE,
         max_overflow=settings.DATABASE_MAX_OVERFLOW,
         pool_pre_ping=True,
         echo=settings.DEBUG,
+        connect_args=connect_args,
     )
 
 

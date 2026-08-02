@@ -48,7 +48,9 @@ async def validation_exception_handler(
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = get_request_id(request)
-    logger.exception("Unhandled exception while processing request", extra={"request_id": request_id})
+    logger.exception(
+        "Unhandled exception while processing request", extra={"request_id": request_id}
+    )
     envelope = ApiResponse[None].fail(
         ErrorDetail(code="INTERNAL_ERROR", message="An unexpected error occurred"),
         request_id=request_id,
@@ -60,7 +62,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    # Starlette's `add_exception_handler` is typed to accept a handler for
+    # the base `Exception`, but each of ours is (correctly, and more
+    # usefully) narrowed to the specific exception type it's registered
+    # for — FastAPI's own documented pattern for this hits the same mypy
+    # --strict friction.
+    app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(
+        StarletteHTTPException, http_exception_handler  # type: ignore[arg-type]
+    )
+    app.add_exception_handler(
+        RequestValidationError, validation_exception_handler  # type: ignore[arg-type]
+    )
     app.add_exception_handler(Exception, unhandled_exception_handler)

@@ -108,7 +108,11 @@ export function BoardsPage() {
   const owned = boards.filter((b) => b.role === 'owner')
   const shared = boards.filter((b) => b.role !== 'owner')
 
-  function BoardList({ list, allowManage }: { list: BoardSummary[]; allowManage: boolean }) {
+  // A plain render helper, deliberately *not* a nested component: declaring
+  // a component inside this one would give it a new type identity on every
+  // render, so React would unmount and remount the whole list each time —
+  // which made the rename input lose focus after every keystroke.
+  function renderBoardList(list: BoardSummary[], allowManage: boolean) {
     return (
       <ul className="flex flex-col gap-2">
         {list.map((board) => (
@@ -205,7 +209,7 @@ export function BoardsPage() {
             <p className="text-sm text-neutral-500">No boards yet — create your first one.</p>
           </div>
         ) : (
-          <BoardList list={owned} allowManage />
+          renderBoardList(owned, true)
         )}
 
         <div className="mb-4 mt-10 flex items-center gap-2">
@@ -218,7 +222,7 @@ export function BoardsPage() {
             Boards someone else invites you to will show up here.
           </p>
         ) : (
-          !loading && <BoardList list={shared} allowManage={false} />
+          !loading && renderBoardList(shared, false)
         )}
       </div>
     </div>

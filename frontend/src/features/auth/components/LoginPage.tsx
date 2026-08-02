@@ -14,8 +14,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Where to land after a successful login: the page they originally tried
+  // to open (set by ProtectedRoute), falling back to the dashboard.
+  const redirectTo = (location.state as { from?: string } | null)?.from ?? '/boards'
+
   if (!loading && user) {
-    const redirectTo = (location.state as { from?: string } | null)?.from ?? '/boards'
     return <Navigate to={redirectTo} replace />
   }
 
@@ -25,7 +28,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate('/boards', { replace: true })
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.')
     } finally {
@@ -84,7 +87,11 @@ export function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-neutral-500">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:underline">
+          <Link
+            to="/register"
+            state={location.state}
+            className="font-medium text-blue-600 hover:underline"
+          >
             Sign up
           </Link>
         </p>

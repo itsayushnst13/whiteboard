@@ -12,9 +12,13 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml alembic.ini ./
+# README.md is required at build time, not just for docs: pyproject.toml
+# points `readme` at it and hatchling errors out if it's missing.
+COPY pyproject.toml alembic.ini README.md ./
 COPY app ./app
 COPY alembic ./alembic
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 
 FROM base AS development
@@ -34,6 +38,6 @@ USER appuser
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl --fail http://localhost:8000/liveness || exit 1
+    CMD curl --fail "http://localhost:${PORT:-8000}/liveness" || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+ENTRYPOINT ["./entrypoint.sh"]

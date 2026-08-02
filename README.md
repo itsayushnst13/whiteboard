@@ -12,7 +12,8 @@ all synced live across everyone in the room.
 - **Backend** — FastAPI (Python 3.13), Postgres, Redis.
 
 See [`frontend/README.md`](frontend/README.md) and
-[`backend/README.md`](backend/README.md) for service-specific setup.
+[`backend/README.md`](backend/README.md) for service-specific setup, and
+[`DEPLOYMENT.md`](DEPLOYMENT.md) for deploying to Vercel + Railway + Neon.
 
 ## Quick start
 
@@ -48,10 +49,10 @@ and share its URL with others to collaborate on it live.
 
 ## Status
 
-The whiteboard app, accounts, and saved boards are built and working. AI
-features are planned as a follow-up phase.
+The whiteboard app, accounts, saved boards, and sharing/permissions are
+built and working. AI features are planned as a follow-up phase.
 
-Known issue (pre-existing, unrelated to accounts/boards): one backend test,
-`test_unhandled_exception_returns_500_without_leaking_details`, fails in this
-environment — worth a look separately.
-# whiteboard
+Backend and frontend test suites are green, and CI runs lint, typecheck,
+tests, and a production build on every push — see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml). For deployment, see
+[`DEPLOYMENT.md`](DEPLOYMENT.md).

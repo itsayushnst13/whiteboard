@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { PenLine } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { ApiError } from '../../../lib/api'
@@ -8,14 +8,19 @@ import { ApiError } from '../../../lib/api'
 export function RegisterPage() {
   const { user, loading, register } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Preserve the originally-requested page (e.g. a shared board link) the
+  // same way LoginPage does — see ProtectedRoute.
+  const redirectTo = (location.state as { from?: string } | null)?.from ?? '/boards'
+
   if (!loading && user) {
-    return <Navigate to="/boards" replace />
+    return <Navigate to={redirectTo} replace />
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -30,7 +35,7 @@ export function RegisterPage() {
     setSubmitting(true)
     try {
       await register(email, password, displayName)
-      navigate('/boards', { replace: true })
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.')
     } finally {
@@ -103,7 +108,11 @@ export function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-neutral-500">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline">
+          <Link
+            to="/login"
+            state={location.state}
+            className="font-medium text-blue-600 hover:underline"
+          >
             Log in
           </Link>
         </p>
