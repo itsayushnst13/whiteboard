@@ -49,6 +49,45 @@ needed for that part.
 
 ---
 
+## Production environment variables (Vercel + Render)
+
+The sections below were written for Railway; the same variables apply on
+**Render** (Docker web service, root directory `backend`, health check path
+`/liveness`; Render injects `PORT`, which `entrypoint.sh` already honours).
+
+| Variable | Required | Platform | Public / secret | Expected format |
+|---|---|---|---|---|
+| `VITE_API_BASE_URL` | Yes | Vercel (build time) | Public | `https://<service>.onrender.com` — origin only, no trailing slash, no `/api/v1` |
+| `VITE_LIVEBLOCKS_PUBLIC_KEY` | Yes (for collaboration) | Vercel (build time) | Public | `pk_prod_...` |
+| `BACKEND_CORS_ORIGINS` | Yes | Render | Public | Comma-separated exact origins, e.g. `https://<app>.vercel.app` (no wildcard in production; trailing slashes are stripped) |
+| `DATABASE_URL` | Yes | Render | Secret | Neon string, `postgresql://...?sslmode=require` (normalised automatically) |
+| `REDIS_URL` | Yes | Render | Secret | `rediss://default:<password>@<host>:6379` (Upstash, TLS) |
+| `JWT_SECRET_KEY` | Yes | Render | Secret | Random 32+ byte string |
+| `ENVIRONMENT` | Yes | Render | Public | `production` |
+| `DEBUG` | Optional | Render | Public | `false` |
+| `PORT` | Do not set | Render | — | Injected by the platform |
+
+**`VITE_*` values are embedded into the JavaScript bundle at build time.**
+Adding or changing one in Vercel has no effect on an existing deployment —
+trigger a new deployment (Deployments → ⋯ → Redeploy, untick "Use existing
+Build Cache"). Without `VITE_API_BASE_URL` a production build now fails every
+request with "API URL is not configured" instead of silently calling
+`localhost`.
+
+**Deployment order:** Render (get URL) → Vercel with `VITE_API_BASE_URL` set
+(get URL) → set `BACKEND_CORS_ORIGINS` on Render to the Vercel origin(s) →
+redeploy Vercel only if the env vars changed.
+
+**Diagnosing "Could not reach the server at …":** the browser reports DNS
+failures, refused connections and CORS blocks identically. The message now
+shows the target URL and the page origin; open DevTools → Network and check
+the `auth/login` request. A red preflight (`OPTIONS`) with no
+`access-control-allow-origin` header means `BACKEND_CORS_ORIGINS` is missing
+that exact origin. Render's free tier also sleeps when idle — the first
+request can take ~50 s, so hit `/liveness` first.
+
+---
+
 ## 1. Neon (database)
 
 **Why:** Postgres needs to exist before the backend can start.

@@ -2,7 +2,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -54,9 +54,21 @@ class Settings(BaseSettings):
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: str | list[str]) -> list[str]:
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+        origins = (
+            [origin.strip() for origin in value.split(",")] if isinstance(value, str) else value
+        )
+        # Browsers send the Origin header without a trailing slash, and CORS
+        # matching is an exact string comparison — so a value pasted as
+        # "https://app.vercel.app/" would silently never match.
+        return [origin.rstrip("/") for origin in origins if origin.strip()]
+
+    @model_validator(mode="after")
+    def _forbid_wildcard_cors_in_production(self) -> "Settings":
+        # allow_credentials=True combined with "*" is both rejected by
+        # browsers and unsafe; production must list explicit origins.
+        if self.ENVIRONMENT is Environment.PRODUCTION and "*" in self.BACKEND_CORS_ORIGINS:
+            raise ValueError("BACKEND_CORS_ORIGINS must list explicit origins in production, not *")
+        return self
 
     @property
     def is_production(self) -> bool:

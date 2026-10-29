@@ -1,4 +1,23 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000'
+const LOCAL_DEV_API_URL = 'http://localhost:8000'
+
+/**
+ * Resolves the backend base URL from VITE_API_BASE_URL (embedded at build
+ * time). The localhost fallback only exists for `vite dev`; a production
+ * build without the variable gets an empty string so requests fail with a
+ * clear configuration error instead of silently calling the visitor's own
+ * localhost. A trailing slash is stripped so `${base}${path}` never
+ * produces a double slash.
+ */
+export function resolveApiBaseUrl(value: string | undefined, isDev: boolean): string {
+  const trimmed = (value ?? '').trim().replace(/\/+$/, '')
+  if (trimmed) return trimmed
+  return isDev ? LOCAL_DEV_API_URL : ''
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL as string | undefined,
+  import.meta.env.DEV,
+)
 const TOKEN_KEY = 'syncboard:token'
 
 export function getToken(): string | null {
@@ -39,11 +58,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...(options.headers as Record<string, string> | undefined),
   }
 
+  if (!API_BASE_URL) {
+    throw new ApiError(
+      'API URL is not configured. Set VITE_API_BASE_URL and redeploy the frontend.',
+      'CONFIG_ERROR',
+      0,
+    )
+  }
+
   let response: Response
   try {
     response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
   } catch {
-    throw new ApiError('Could not reach the server. Is the backend running?', 'NETWORK_ERROR', 0)
+    // fetch() rejects for DNS/connection failures *and* for CORS blocks —
+    // the browser deliberately doesn't say which — so name the target to
+    // make a wrong URL or a missing CORS origin easy to spot.
+    throw new ApiError(
+      `Could not reach the server at ${API_BASE_URL}. Check that the backend is running and that it allows requests from ${window.location.origin}.`,
+      'NETWORK_ERROR',
+      0,
+    )
   }
 
   let body: ApiEnvelope<T> | null = null

@@ -1,7 +1,7 @@
 
 {
   "buildCommand": "npm --prefix frontend run build",
-  "installCommand": "npm --prefix frontend install",
+  "installCommand": "npm --prefix frontend ci",
   "outputDirectory": "frontend/dist",
   "framework": null,
   "rewrites": [

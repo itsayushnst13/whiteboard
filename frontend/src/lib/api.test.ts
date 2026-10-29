@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { api, ApiError, clearToken, getToken, setToken } from './api'
+import { api, ApiError, clearToken, getToken, resolveApiBaseUrl, setToken } from './api'
 
 function jsonResponse(body: unknown, ok = true, status = 200): Response {
   return {
@@ -85,5 +85,36 @@ describe('api client', () => {
     const [, options] = vi.mocked(fetch).mock.calls[0]
     expect(options?.method).toBe('PATCH')
     expect(options?.body).toBe(JSON.stringify({ name: 'New name' }))
+  })
+})
+
+describe('resolveApiBaseUrl', () => {
+  it('uses the configured URL and strips trailing slashes', () => {
+    expect(resolveApiBaseUrl('https://api.example.com/', false)).toBe('https://api.example.com')
+    expect(resolveApiBaseUrl(' https://api.example.com// ', false)).toBe('https://api.example.com')
+  })
+
+  it('falls back to localhost only in dev', () => {
+    expect(resolveApiBaseUrl(undefined, true)).toBe('http://localhost:8000')
+    expect(resolveApiBaseUrl('', true)).toBe('http://localhost:8000')
+  })
+
+  it('never falls back to localhost in a production build', () => {
+    expect(resolveApiBaseUrl(undefined, false)).toBe('')
+    expect(resolveApiBaseUrl('   ', false)).toBe('')
+  })
+})
+
+describe('network error message', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('names the target URL and the page origin so CORS/URL mistakes are diagnosable', async () => {
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(api.post('/auth/login', {})).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+      message: expect.stringContaining('Could not reach the server at'),
+    })
   })
 })
