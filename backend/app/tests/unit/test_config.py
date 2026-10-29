@@ -9,7 +9,7 @@ def _settings(**overrides: object) -> Settings:
         "DATABASE_URL": "postgresql+asyncpg://user:pass@localhost:5432/db",
         "REDIS_URL": "redis://localhost:6379/0",
     }
-    return Settings(**{**defaults, **overrides})  # type: ignore[arg-type]
+    return Settings(_env_file=None, **{**defaults, **overrides})  # type: ignore[arg-type]
 
 
 def test_cors_origins_parsed_from_comma_separated_string() -> None:
