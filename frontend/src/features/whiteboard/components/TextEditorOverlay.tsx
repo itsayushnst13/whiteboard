@@ -11,7 +11,8 @@ interface TextEditorOverlayProps {
 
 export function TextEditorOverlay({ shape, scale, stagePos, onChange, onClose }: TextEditorOverlayProps) {
   const ref = useRef<HTMLTextAreaElement>(null)
-  const [value, setValue] = useState(shape.text)
+  const initialText = typeof shape.text === 'string' ? shape.text : ''
+  const [value, setValue] = useState<string>(initialText)
 
   useEffect(() => {
     ref.current?.focus()
