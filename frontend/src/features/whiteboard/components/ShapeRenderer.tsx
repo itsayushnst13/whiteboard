@@ -11,14 +11,7 @@ interface ShapeRendererProps {
   onDblClick?: () => void
 }
 
-export function ShapeRenderer({
-  shape,
-  isSelected,
-  draggable,
-  onSelect,
-  onDragEnd,
-  onDblClick,
-}: ShapeRendererProps) {
+export function ShapeRenderer({ shape, isSelected, draggable, onSelect, onDragEnd, onDblClick }: ShapeRendererProps) {
   const common = {
     id: shape.id,
     x: shape.x,
@@ -29,113 +22,53 @@ export function ShapeRenderer({
     onTap: onSelect,
     onDblClick,
     onDblTap: onDblClick,
-    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
-      onDragEnd(e.target.x(), e.target.y())
-    },
-    stroke: isSelected ? '#3b82f6' : shape.stroke,
+    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => onDragEnd(e.target.x(), e.target.y()),
+    stroke: isSelected ? '#2563eb' : shape.stroke,
     strokeWidth: isSelected ? shape.strokeWidth + 1 : shape.strokeWidth,
   }
 
   switch (shape.type) {
     case 'rectangle':
-      return (
-        <Rect
-          {...common}
-          width={shape.width}
-          height={shape.height}
-          fill={shape.fill}
-          cornerRadius={4}
-        />
-      )
+      return <Rect {...common} width={shape.width} height={shape.height} fill={shape.fill} cornerRadius={6} />
     case 'ellipse':
-      return (
-        <Ellipse
-          {...common}
-          x={shape.x + shape.width / 2}
-          y={shape.y + shape.height / 2}
-          radiusX={Math.abs(shape.width) / 2}
-          radiusY={Math.abs(shape.height) / 2}
-          fill={shape.fill}
-        />
-      )
+      return <Ellipse {...common} x={shape.x + shape.width / 2} y={shape.y + shape.height / 2} radiusX={Math.abs(shape.width) / 2} radiusY={Math.abs(shape.height) / 2} fill={shape.fill} />
     case 'star':
-      return (
-        <Star
-          {...common}
-          x={shape.x + shape.width / 2}
-          y={shape.y + shape.height / 2}
-          numPoints={5}
-          innerRadius={Math.min(Math.abs(shape.width), Math.abs(shape.height)) / 4}
-          outerRadius={Math.min(Math.abs(shape.width), Math.abs(shape.height)) / 2}
-          fill={shape.fill}
-        />
-      )
+      return <Star {...common} x={shape.x + shape.width / 2} y={shape.y + shape.height / 2} numPoints={5} innerRadius={Math.min(Math.abs(shape.width), Math.abs(shape.height)) / 4} outerRadius={Math.min(Math.abs(shape.width), Math.abs(shape.height)) / 2} fill={shape.fill} />
     case 'line':
-      return (
-        <Line
-          {...common}
-          points={shape.points}
-          lineCap="round"
-          lineJoin="round"
-          hitStrokeWidth={16}
-        />
-      )
+      return <Line {...common} points={shape.points} lineCap="round" lineJoin="round" hitStrokeWidth={16} />
     case 'arrow':
-      return (
-        <Arrow
-          {...common}
-          points={shape.points}
-          fill={shape.stroke}
-          pointerLength={12}
-          pointerWidth={12}
-          hitStrokeWidth={16}
-        />
-      )
+      return <Arrow {...common} points={shape.points} fill={shape.stroke} pointerLength={12} pointerWidth={12} hitStrokeWidth={16} />
     case 'pencil':
-      return (
-        <Line
-          {...common}
-          points={shape.points}
-          tension={0.4}
-          lineCap="round"
-          lineJoin="round"
-          fill={undefined}
-          hitStrokeWidth={16}
-        />
-      )
+      return <Line {...common} points={shape.points} tension={0.4} lineCap="round" lineJoin="round" fill={undefined} hitStrokeWidth={16} />
     case 'text':
       return (
         <Text
           {...common}
-          text={shape.text}
+          text={shape.text || ' '}
           fontSize={shape.fontSize}
           width={shape.width}
+          height={44}
+          padding={4}
+          wrap="word"
           fill={shape.fill}
           stroke={undefined}
+          hitStrokeWidth={12}
         />
       )
     case 'sticky':
       return (
         <>
-          <Rect
-            {...common}
-            width={shape.width}
-            height={shape.height}
-            fill={shape.fill}
-            cornerRadius={2}
-            shadowColor="black"
-            shadowOpacity={0.15}
-            shadowBlur={6}
-            shadowOffsetY={3}
-          />
+          <Rect {...common} width={shape.width} height={shape.height} fill={shape.fill} cornerRadius={8} shadowColor="#0f172a" shadowOpacity={0.12} shadowBlur={12} shadowOffsetY={4} />
           <Text
+            {...common}
             x={shape.x + 10}
             y={shape.y + 10}
             width={shape.width - 20}
             height={shape.height - 20}
-            text={shape.text}
+            text={shape.text || ' '}
             fontSize={16}
-            fill="#1e1e1e"
+            fill="#172033"
+            stroke={undefined}
             listening={false}
           />
         </>
