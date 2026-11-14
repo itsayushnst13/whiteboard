@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Shape } from '../types'
 
 interface TextEditorOverlayProps {
@@ -11,51 +11,63 @@ interface TextEditorOverlayProps {
 
 export function TextEditorOverlay({ shape, scale, stagePos, onChange, onClose }: TextEditorOverlayProps) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const [value, setValue] = useState(shape.text)
 
   useEffect(() => {
     ref.current?.focus()
-    ref.current?.select()
+    ref.current?.setSelectionRange(value.length, value.length)
   }, [])
 
   if (shape.type !== 'text' && shape.type !== 'sticky') return null
 
-  const width = shape.type === 'text' ? shape.width : shape.width - 20
-  const height = shape.type === 'sticky' ? shape.height - 20 : 40
-  const fontSize = shape.type === 'text' ? shape.fontSize : 16
+  const isSticky = shape.type === 'sticky'
+  const width = isSticky ? shape.width - 20 : shape.width
+  const height = isSticky ? shape.height - 20 : 44
+  const fontSize = isSticky ? 16 : shape.fontSize
+
+  function commit() {
+    onChange(value)
+    onClose()
+  }
 
   return (
     <textarea
       ref={ref}
-      defaultValue={shape.text}
-      onBlur={(e) => {
-        onChange(e.target.value)
-        onClose()
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.currentTarget.blur()
+      aria-label={isSticky ? 'Edit sticky note' : 'Edit text'}
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.currentTarget.blur()
         }
-        if (e.key === 'Enter' && !e.shiftKey && shape.type === 'text') {
-          e.preventDefault()
-          e.currentTarget.blur()
+        if (event.key === 'Enter' && !event.shiftKey && !isSticky) {
+          event.preventDefault()
+          event.currentTarget.blur()
         }
       }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
       style={{
         position: 'absolute',
-        top: shape.y * scale + stagePos.y + (shape.type === 'sticky' ? 10 * scale : 0),
-        left: shape.x * scale + stagePos.x + (shape.type === 'sticky' ? 10 * scale : 0),
-        width: width * scale,
-        height: height * scale,
-        fontSize: fontSize * scale,
-        lineHeight: 1.3,
-        border: '2px solid #3b82f6',
-        borderRadius: 4,
-        padding: 4,
-        background: shape.type === 'sticky' ? 'transparent' : 'white',
-        resize: 'none',
+        top: shape.y * scale + stagePos.y + (isSticky ? 10 * scale : 0),
+        left: shape.x * scale + stagePos.x + (isSticky ? 10 * scale : 0),
+        width: Math.max(40, width * scale),
+        minHeight: Math.max(36, height * scale),
+        height: isSticky ? Math.max(40, height * scale) : undefined,
+        fontSize: Math.max(10, fontSize * scale),
+        lineHeight: 1.35,
+        border: '2px solid #2563eb',
+        borderRadius: 8,
+        padding: 6,
+        background: isSticky ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.96)',
+        boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
+        resize: 'both',
         outline: 'none',
         fontFamily: 'inherit',
-        color: '#1e1e1e',
+        fontWeight: 500,
+        color: '#172033',
         zIndex: 50,
       }}
     />
